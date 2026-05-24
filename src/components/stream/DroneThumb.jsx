@@ -11,13 +11,14 @@ const BORDER_COLORS = {
 
 export default function DroneThumb({
   drone,
-  selected  = false,
-  onClick   = () => {},
-  width     = 110,
-  height    = 68,
+  selected = false,   // focused pane
+  pinned   = false,   // in multi-view (but not focused)
+  onClick  = () => {},
+  width    = 110,
+  height   = 68,
 }) {
-  const borderColor = selected
-    ? 'var(--accent)'
+  const borderColor = selected ? 'var(--accent)'
+    : pinned          ? 'rgba(0,200,240,0.35)'
     : BORDER_COLORS[drone.status]
 
   const borderWidth = selected ? '2px' : '1px'
@@ -34,7 +35,6 @@ export default function DroneThumb({
         opacity: drone.status === 'inactive' ? 0.55 : 1,
       }}
     >
-      {/* Canvas feed */}
       <DroneCanvas
         hue={drone.status === 'inactive' ? 200 : (100 + Math.abs(drone.id.charCodeAt(4) * 3) % 40)}
         noisy={drone.status === 'red'}
@@ -43,15 +43,15 @@ export default function DroneThumb({
         style={{ width, height }}
       />
 
-      {/* REC badge */}
-      {drone.recording && (
+      {/* REC badge or pinned indicator — share top-right slot */}
+      {(drone.recording || pinned) && (
         <div className="absolute top-[3px] right-[4px] mono text-[7px] px-1 rounded-sm"
              style={{
-               color: 'var(--danger)',
+               color: drone.recording ? 'var(--danger)' : 'var(--accent)',
                background: 'rgba(0,0,0,0.65)',
-               animation: 'livePulse 1.2s ease-in-out infinite',
+               animation: drone.recording ? 'livePulse 1.2s ease-in-out infinite' : 'none',
              }}>
-          ● REC
+          {drone.recording ? '● REC' : '◈'}
         </div>
       )}
 

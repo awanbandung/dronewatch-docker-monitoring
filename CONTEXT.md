@@ -105,7 +105,15 @@ Badge states: READY (ok), LOW STOCK / % REPAIR (warn), N OFFLINE (bad)
 - Selected drone highlighted with 2px accent border
 
 ### Multi-View Pane
-A large video cell in a multi-drone focus layout. Each pane shows: video feed + Drone ID + battery % + status color dot. Does **not** include the full telemetry HUD (no compass, no KETINGGIAN/KECEPATAN rows). Clicking a pane promotes that drone to the single-feed view with full HUD.
+A large video cell in a multi-drone focus layout. Each pane shows: video feed + Drone ID + battery % + status color dot. Does **not** include the full telemetry HUD (no compass, no KETINGGIAN/KECEPATAN rows).
+
+### Focused Pane
+The pane last clicked by the operator in multi-view. The right sidebar (Peta Navigasi, Drone Summary, Drone Log) always tracks the Focused Pane's drone. Highlighted with accent border. Distinct from drone `status: green` (Operasional) — "focused" refers to UI state, not drone health.
+
+### Pin / Unpin
+- **Pin**: operator clicks the PIN button on a thumbnail in the bottom grid → drone enters the main view as a new pane. In multi-view, clicks only ever ADD — they never replace an existing pane.
+- **Unpin**: operator clicks × on a pane → removes it from the main view. The only way to remove a pane in multi-view; no accidental replacement possible.
+- If the grid thumbnail belongs to an already-pinned drone, clicking it scrolls/highlights that pane instead of adding a duplicate.
 
 ### Multi-View (Streaming page mode)
 When multiple drones are pinned to the main view, the feed area splits into equal-width panes — 1 drone = full width, 2 = 50/50, 3 = thirds, etc. The right sidebar (Peta Navigasi, Drone Summary, Drone Log) tracks whichever pane is active (clicked). The right sidebar is collapsible to give full horizontal space to the feeds.
@@ -116,7 +124,7 @@ Pane limits by context:
 - Desktop: 12
 - Video Tron: 50
 
-Auto-layout: panes resize equally to fill available space. At ≥5 panes, sidebar and bottom grid auto-collapse (wall mode).
+Auto-layout: balanced square grid. `cols = ceil(sqrt(N))`, `rows = ceil(N / cols)`. Panes fill available space equally. At ≥5 panes, sidebar and bottom grid auto-collapse (wall mode). Column-count override available in header for power users.
 
 ### Video Tron
 Physical: 8m wide, 2 × 4m panels side by side (Ruang Meeting Utama / Section B). Combined resolution estimated 7680×2160. At 50 drones: 10×5 grid = ~768×432px per cell — readable at wall distance. Served via dedicated `/wall` fullscreen route with no chrome (no TopNav, no BottomBar).
@@ -154,6 +162,20 @@ UI labels mix Indonesian and English deliberately:
 - Drone area coordinates: Papua highlands, approx `-4.2064 / 138.350`
 
 ---
+
+## Mobile
+
+- **Detection**: device width (not login-based). Role-based routing added in Phase 3 when backend lands.
+- **User**: Field officer — read-only situational awareness
+- **Entry screen**: Drone selector (list of all drones with status color + area label) → tap → full-screen single feed
+- **Max panes**: 1
+- **UI**: minimal — no desktop chrome, no right sidebar, no bottom grid
+
+## Drone Fleet Size
+
+- **Confirmed**: 50 drones for current client deployment
+- **Architecture**: data-driven, not hardcoded — system must scale if count grows
+- **Spec discrepancy**: client spec document shows "72 Drone" — confirmed with client that 50 is correct
 
 ## What's Mock (Phase 1) vs. Real (Future Phases)
 
