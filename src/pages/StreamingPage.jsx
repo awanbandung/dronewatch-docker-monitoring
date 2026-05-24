@@ -82,9 +82,10 @@ export default function StreamingPage() {
     if (searchQuery || filterOpen) setGridOpen(true)
   }, [searchQuery, filterOpen])
 
-  // Wall mode threshold — auto-collapse chrome
+  // Wall mode threshold — auto-collapse chrome, clear stale hover state
   useEffect(() => {
     if (N >= 5) { setSidebarOpen(false); setGridOpen(false) }
+    if (N > 1) setFeedFocused(false)
   }, [N])
 
   useEffect(() => () => clearTimeout(stopConfirmRef.current), [])
@@ -133,6 +134,8 @@ export default function StreamingPage() {
     })
     .sort((a, b) => sortAsc ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id))
 
+  const pinnedIds = new Set(pinnedDrones.map(d => d.id))  // O(1) lookup per thumbnail
+
   const recLabel = recording ? `${padZ(Math.floor(recSec / 60))}:${padZ(recSec % 60)}` : 'RECORD'
   const batColor = !telem ? 'var(--success)'
     : telem.bat > 50 ? 'var(--success)'
@@ -170,6 +173,7 @@ export default function StreamingPage() {
 
               <DroneCanvas
                 hue={hue}
+                fps={60}
                 noisy={focusedDrone.status === 'red'}
                 inactive={focusedDrone.status === 'inactive'}
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
@@ -497,7 +501,7 @@ export default function StreamingPage() {
                     key={drone.id}
                     drone={drone}
                     selected={drone.id === focusedDrone.id}
-                    pinned={pinnedDrones.some(d => d.id === drone.id)}
+                    pinned={pinnedIds.has(drone.id)}
                     onClick={() => handlePinDrone(drone)}
                     width={110}
                     height={68}
@@ -532,8 +536,9 @@ function DronePane({ drone, focused, fps, onFocus, onUnpin }) {
       className="relative overflow-hidden cursor-pointer group"
       style={{
         background: '#000',
-        outline: focused ? '2px solid var(--accent)' : 'none',
-        outlineOffset: '-2px',
+        outline: focused ? '2px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)',
+        outlineOffset: focused ? '-2px' : '-1px',
+        transition: 'outline 0.15s ease',
       }}
     >
       <DroneCanvas
