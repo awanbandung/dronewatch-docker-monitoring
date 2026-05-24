@@ -1,5 +1,5 @@
 // src/pages/LoginPage.jsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useClock } from '@/hooks/useClock.js'
 
@@ -36,6 +36,8 @@ export default function LoginPage() {
       setLoading(false)
       // In production: validate against backend, store JWT
       if (opId === 'OPS-ADMIN1' && password === 'admin') {
+        localStorage.setItem('dw_operator', opId)
+        localStorage.setItem('dw_level', access || 'COMMANDER')
         navigate('/dashboard')
       } else {
         const next = attempts + 1

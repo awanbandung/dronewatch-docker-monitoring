@@ -39,6 +39,7 @@ export default function DroneThumb({
         hue={drone.status === 'inactive' ? 200 : (100 + Math.abs(drone.id.charCodeAt(4) * 3) % 40)}
         noisy={drone.status === 'red'}
         inactive={drone.status === 'inactive'}
+        fps={12}
         style={{ width, height }}
       />
 

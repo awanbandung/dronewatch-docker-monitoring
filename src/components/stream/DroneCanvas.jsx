@@ -4,11 +4,12 @@
 import { useEffect, useRef } from 'react'
 
 export default function DroneCanvas({
-  hue     = 105,
-  noisy   = false,
+  hue      = 105,
+  noisy    = false,
   inactive = false,
+  fps      = 60,   // thumbnails should pass fps={12}
   className = '',
-  style   = {},
+  style    = {},
 }) {
   const canvasRef = useRef(null)
   const aliveRef  = useRef(true)
@@ -18,38 +19,64 @@ export default function DroneCanvas({
     const cv  = canvasRef.current
     if (!cv) return
     const ctx = cv.getContext('2d')
+
+    // Gradient cached per canvas size — recreated only on resize
+    let vignetteCache = null
+    let cacheW = 0, cacheH = 0
+
+    function getVignette(w, h) {
+      if (vignetteCache && cacheW === w && cacheH === h) return vignetteCache
+      vignetteCache = ctx.createRadialGradient(w/2, h/2, h * 0.15, w/2, h/2, h * 0.85)
+      vignetteCache.addColorStop(0, 'transparent')
+      vignetteCache.addColorStop(1, 'rgba(0,0,0,0.6)')
+      cacheW = w; cacheH = h
+      return vignetteCache
+    }
+
+    // Inactive: draw once and stop — no animation needed
+    if (inactive) {
+      const w = cv.width || cv.offsetWidth
+      const h = cv.height || cv.offsetHeight
+      ctx.fillStyle = '#0d1018'
+      ctx.fillRect(0, 0, w, h)
+      ctx.fillStyle = 'rgba(74,85,104,0.15)'
+      ctx.fillRect(0, 0, w, h)
+      ctx.font = `${Math.max(9, w * 0.07)}px Share Tech Mono, monospace`
+      ctx.fillStyle = 'rgba(74,85,104,0.5)'
+      ctx.textAlign = 'center'
+      ctx.fillText('STANDBY', w / 2, h / 2 + 4)
+      return () => { aliveRef.current = false }
+    }
+
+    const interval = 1000 / fps
+    let lastTime = 0
     let frame = 0
 
-    function draw() {
+    function draw(timestamp) {
       if (!aliveRef.current) return
-      const w = cv.width, h = cv.height
-      if (!w || !h) { requestAnimationFrame(draw); return }
 
-      if (inactive) {
-        ctx.fillStyle = '#0d1018'
-        ctx.fillRect(0, 0, w, h)
-        ctx.fillStyle = 'rgba(74,85,104,0.15)'
-        ctx.fillRect(0, 0, w, h)
-        ctx.font = `${Math.max(9, w * 0.07)}px Share Tech Mono, monospace`
-        ctx.fillStyle = 'rgba(74,85,104,0.5)'
-        ctx.textAlign = 'center'
-        ctx.fillText('STANDBY', w / 2, h / 2 + 4)
+      // Throttle to target fps
+      if (timestamp - lastTime < interval) {
         requestAnimationFrame(draw)
         return
       }
+      lastTime = timestamp
+
+      const w = cv.width, h = cv.height
+      if (!w || !h) { requestAnimationFrame(draw); return }
 
       // Terrain base
       ctx.fillStyle = `hsl(${hue},18%,7%)`
       ctx.fillRect(0, 0, w, h)
 
-      // Terrain noise blocks
-      const blockCount = Math.floor(w * h * 0.012)
+      // Terrain noise blocks — sparse, dark aerial look
+      const blockCount = Math.floor(w * h * 0.007)
       for (let i = 0; i < blockCount; i++) {
         const x = Math.random() * w
         const y = Math.random() * h
         const s = Math.random() * (w * 0.025) + 2
-        const l = Math.random() * 26 + 4
-        ctx.fillStyle = `hsla(${hue + Math.random() * 25 - 12},${15 + Math.random() * 35}%,${l}%,0.55)`
+        const l = Math.random() * 18 + 3
+        ctx.fillStyle = `hsla(${hue + Math.random() * 25 - 12},${15 + Math.random() * 35}%,${l}%,0.35)`
         ctx.fillRect(x, y, s, s * 0.65)
       }
 
@@ -59,11 +86,8 @@ export default function DroneCanvas({
       ctx.lineWidth = 0.5
       ctx.beginPath(); ctx.moveTo(0, hy); ctx.lineTo(w, hy); ctx.stroke()
 
-      // Vignette
-      const vg = ctx.createRadialGradient(w/2, h/2, h*0.15, w/2, h/2, h*0.85)
-      vg.addColorStop(0, 'transparent')
-      vg.addColorStop(1, 'rgba(0,0,0,0.6)')
-      ctx.fillStyle = vg
+      // Vignette — reuse cached gradient
+      ctx.fillStyle = getVignette(w, h)
       ctx.fillRect(0, 0, w, h)
 
       // Glitch for lost signal
@@ -92,9 +116,9 @@ export default function DroneCanvas({
       requestAnimationFrame(draw)
     }
 
-    draw()
+    requestAnimationFrame(draw)
     return () => { aliveRef.current = false }
-  }, [hue, noisy, inactive])
+  }, [hue, noisy, inactive, fps])
 
   return (
     <canvas

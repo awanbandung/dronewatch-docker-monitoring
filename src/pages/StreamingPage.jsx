@@ -95,6 +95,8 @@ export default function StreamingPage() {
     setSelectedDrone(drone)
     setRecording(false)
     setRecSec(0)
+    clearTimeout(stopConfirmRef.current)
+    setStopConfirm(false)
   }
 
   // Filtered + sorted drone list

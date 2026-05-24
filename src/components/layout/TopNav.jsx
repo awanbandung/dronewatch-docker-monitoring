@@ -1,5 +1,6 @@
 // src/components/layout/TopNav.jsx
-import { NavLink } from 'react-router-dom'
+import { useRef, useState, useEffect } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useClock } from '@/hooks/useClock.js'
 
 const TABS = [
@@ -9,8 +10,29 @@ const TABS = [
   { path: '/inventory', icon: '≡', label: 'INVENTORY ASSET', disabled: true },
 ]
 
-export default function TopNav({ operator = 'CDR-NDUGA-01', streamCount = 47 }) {
+export default function TopNav({ streamCount = 47 }) {
   const { time } = useClock()
+  const navigate = useNavigate()
+  const operator = localStorage.getItem('dw_operator') || 'OPS-ADMIN1'
+  const level    = localStorage.getItem('dw_level')    || 'COMMANDER'
+
+  const [open, setOpen] = useState(false)
+  const dropRef = useRef(null)
+
+  // Close on outside click
+  useEffect(() => {
+    function onMouseDown(e) {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [])
+
+  function terminateSession() {
+    localStorage.removeItem('dw_operator')
+    localStorage.removeItem('dw_level')
+    navigate('/login')
+  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex items-stretch h-[42px]"
@@ -39,9 +61,43 @@ export default function TopNav({ operator = 'CDR-NDUGA-01', streamCount = 47 }) 
         <span className="mono text-[9px] text-[#6b7b90] tracking-wide">
           {streamCount} STREAMS
         </span>
-        <span className="mono text-[9px] text-[#6b7b90] tracking-wide">
-          OPR: {operator}
-        </span>
+
+        {/* Clickable operator badge */}
+        <div ref={dropRef} className="relative">
+          <button
+            onClick={() => setOpen(v => !v)}
+            className="mono text-[9px] text-[#6b7b90] tracking-wide flex items-center gap-1.5 px-2 py-1 rounded-sm transition-colors hover:text-[#dde4ef]"
+            style={{ border: open ? '1px solid rgba(0,200,240,0.3)' : '1px solid transparent' }}>
+            OPR: {operator}
+            <span style={{ fontSize: 7, opacity: 0.5 }}>{open ? '▲' : '▼'}</span>
+          </button>
+
+          {open && (
+            <div className="absolute right-0 top-[calc(100%+6px)] w-[200px] rounded-sm py-2"
+                 style={{ background: '#141922', border: '1px solid rgba(0,200,240,0.2)', zIndex: 100 }}>
+              {/* Top accent */}
+              <div className="absolute top-[-1px] left-4 right-4 h-[1px]"
+                   style={{ background: 'linear-gradient(90deg, transparent, var(--accent), transparent)' }} />
+
+              <div className="px-3 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="mono text-[11px] text-[#dde4ef] tracking-wide">{operator}</div>
+                <div className="mono text-[9px] text-[#6b7b90] tracking-[1px] mt-0.5">
+                  LEVEL: {level}
+                </div>
+              </div>
+
+              <button
+                onClick={terminateSession}
+                className="w-full text-left px-3 py-2 mono text-[10px] tracking-[1px] transition-all group"
+                style={{ color: '#6b7b90' }}
+                onMouseEnter={e => Object.assign(e.currentTarget.style, { color: 'var(--danger)', background: 'rgba(255,64,64,0.07)' })}
+                onMouseLeave={e => Object.assign(e.currentTarget.style, { color: '#6b7b90',        background: 'transparent' })}>
+                ▶ TERMINATE SESSION
+              </button>
+            </div>
+          )}
+        </div>
+
         <span className="mono text-[9px] tracking-wide" style={{ color: 'var(--accent)' }}>
           {time}
         </span>

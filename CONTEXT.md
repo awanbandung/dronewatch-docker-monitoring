@@ -104,6 +104,23 @@ Badge states: READY (ok), LOW STOCK / % REPAIR (warn), N OFFLINE (bad)
 - Search by drone ID or area label
 - Selected drone highlighted with 2px accent border
 
+### Multi-View Pane
+A large video cell in a multi-drone focus layout. Each pane shows: video feed + Drone ID + battery % + status color dot. Does **not** include the full telemetry HUD (no compass, no KETINGGIAN/KECEPATAN rows). Clicking a pane promotes that drone to the single-feed view with full HUD.
+
+### Multi-View (Streaming page mode)
+When multiple drones are pinned to the main view, the feed area splits into equal-width panes — 1 drone = full width, 2 = 50/50, 3 = thirds, etc. The right sidebar (Peta Navigasi, Drone Summary, Drone Log) tracks whichever pane is active (clicked). The right sidebar is collapsible to give full horizontal space to the feeds.
+
+Pane limits by context:
+- Mobile: 1
+- Tablet: 4–6
+- Desktop: 12
+- Video Tron: 50
+
+Auto-layout: panes resize equally to fill available space. At ≥5 panes, sidebar and bottom grid auto-collapse (wall mode).
+
+### Video Tron
+Physical: 8m wide, 2 × 4m panels side by side (Ruang Meeting Utama / Section B). Combined resolution estimated 7680×2160. At 50 drones: 10×5 grid = ~768×432px per cell — readable at wall distance. Served via dedicated `/wall` fullscreen route with no chrome (no TopNav, no BottomBar).
+
 ---
 
 ## Design System Decisions
