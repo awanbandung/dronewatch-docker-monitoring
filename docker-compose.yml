@@ -1,0 +1,290 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx
+    restart: unless-stopped
+    networks:
+      - internal-net
+    ports:
+      - "8554:8554"       # RTSP (TCP)
+      - "1935:1935"       # RTMP
+      - "8888:8888"       # HLS
+      - "8889:8889"       # WebRTC (HTTP)
+      - "8189:8189/udp"   # WebRTC (ICE/UDP)
+      - "8890:8890/udp"   # SRT
+
+  portainer:
+    image: portainer/portainer-ce:2.41.1-alpine
+    container_name: monitoring-portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/reis/drone_docker_data/portainer/data:/data
+    expose:
+      - "9000"
+    networks:
+      - internal-net
+    environment:
+      TZ: Asia/Jakarta
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 9000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    container_name: monitoring-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=50GB"
+      - "--storage.tsdb.wal-compression"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+      - ./prometheus/targets/blackbox-http.json:/etc/prometheus/targets/blackbox-http.json:ro
+      - /home/reis/drone_docker_data/prometheus:/prometheus
+    depends_on:
+      - alertmanager
+      - cadvisor
+      - node-exporter
+      - blackbox-exporter
+    expose:
+      - "9090"
+    ports:
+      - "9090:9090"
+    networks:
+      - internal-net
+    environment:
+      TZ: Asia/Jakarta
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: monitoring-grafana
+    restart: unless-stopped
+    user: "472"
+    environment:
+      TZ: Asia/Jakarta
+    volumes:
+      - /home/reis/drone_docker_data/grafana:/var/lib/grafana
+    env_file:
+      - /home/reis/drone_docker_data/grafana/.env
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
+    networks:
+      - internal-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      - prometheus
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test:
+        ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  node-exporter:
+    image: prom/node-exporter:v1.11.1
+    container_name: monitoring-node-exporter
+    hostname: docker-drc-01
+    pid: host
+    restart: unless-stopped
+    command:
+      - "--path.rootfs=/host"
+    volumes:
+      - "/:/host:ro,rslave"
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - internal-net
+    environment:
+      TZ: Asia/Jakarta
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "9100"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.28.0
+    container_name: monitoring-blackbox-exporter
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+      - '--log.level=warn'
+    expose:
+      - "9115"
+    # ports:
+    #   - "9115:9115"
+    volumes:
+      - ./blackbox_exporter/blackbox.yml:/etc/blackbox_exporter/config.yml
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - internal-net
+    environment:
+      TZ: Asia/Jakarta
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "9115"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    container_name: monitoring-cadvisor
+    restart: unless-stopped
+    privileged: false
+    command:
+      - '--docker_only=true'
+      - '--housekeeping_interval=30s'
+      - '--max_housekeeping_interval=35s'
+      - '--event_storage_event_limit=default=0'
+      - '--event_storage_age_limit=default=0'
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    devices:
+      - /dev/kmsg
+    expose:
+      - "8080"
+    networks:
+      - internal-net
+    environment:
+      TZ: Asia/Jakarta
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: monitoring-alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+       - /home/reis/drone_docker_data/alertmanager:/alertmanager
+    read_only: true
+    tmpfs:
+      - /tmp
+    # ports:
+    #   - "9093:9093"
+    expose:
+      - "9093"
+    networks:
+      - internal-net
+    environment:
+      TZ: Asia/Jakarta
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  internal-net:
+    external: true
