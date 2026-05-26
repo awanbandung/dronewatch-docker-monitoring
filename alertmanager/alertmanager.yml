@@ -1,0 +1,84 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: "smtp.gmail.com:587"
+  smtp_from: "awanbandung@gmail.com"
+  smtp_auth_username: "awanbandung@gmail.com"
+  smtp_auth_password: "gycybxrrclgkndmo"
+  smtp_require_tls: true
+
+route:
+  receiver: "null"
+
+  routes:
+    # ==================== CRITICAL ====================
+    - matchers:
+        - severity = "critical"
+      receiver: "discord"
+      continue: true
+      group_by: ["alertname", "instance", "service"]
+      group_wait: 30s
+      group_interval: 1m
+      repeat_interval: 4h
+
+    - matchers:
+        - severity = "critical"
+      receiver: "email"
+      continue: true
+      group_by: ["alertname","severity"]           
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 6h
+
+
+    # ==================== WARNING ====================
+    - matchers:
+        - severity = "warning"
+      receiver: "discord"
+      continue: true
+      group_by: ["alertname","severity"]   
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 24h
+
+    - matchers:
+        - severity = "warning"
+      receiver: "email"
+      group_by: ["alertname","severity"]     
+      group_wait: 2m
+      group_interval: 15m
+      repeat_interval: 24h
+
+receivers:
+  - name: "null"
+
+  # =========================
+  # DISCORD
+  # =========================
+  - name: "discord"
+    discord_configs:
+      - webhook_url: "https://discord.com/api/webhooks/1506204762863829074/F5B_tkT-qy3J2FBfhEnWGYwRnKt9n6eqsNdbS4A1tfxMd2mKJUQXp2zQICGOqonGug1b"
+        send_resolved: true
+        title: ""
+        message: |
+          {{ if eq .CommonLabels.severity "critical" }}🚨{{ else }}⚠️{{ end }} {{ .CommonLabels.alertname }}
+
+          {{ range .Alerts }}
+          Severity : {{ .Labels.severity }}
+
+          Service  : {{ .Labels.service }}
+
+          Summary  : {{ .Annotations.summary }}
+          Detail   : {{ .Annotations.description }}
+
+          Instance : {{ .Labels.instance }}
+          Job      : {{ .Labels.job }}
+
+          {{ end }}
+
+  # =========================
+  # EMAIL
+  # =========================
+  - name: "email"
+    email_configs:
+      - to: "wawan.rudiana@vinotek.id"
+        send_resolved: true

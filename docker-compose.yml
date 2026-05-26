@@ -1,17 +1,54 @@
 services:
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:1.18.2
     container_name: mediamtx
     restart: unless-stopped
     networks:
       - internal-net
     ports:
-      - "8554:8554"       # RTSP (TCP)
-      - "1935:1935"       # RTMP
-      - "8888:8888"       # HLS
-      - "8889:8889"       # WebRTC (HTTP)
-      - "8189:8189/udp"   # WebRTC (ICE/UDP)
-      - "8890:8890/udp"   # SRT
+      - "8554:8554"         # RTSP
+      - "1935:1935"         # RTMP
+      - "8888:8888"         # HLS
+      - "8889:8889"         # WebRTC HTTP
+      - "8189:8189/udp"     # WebRTC ICE/UDP
+      - "8890:8890/udp"     # SRT
+      - "9997:9997"         # API
+    volumes:
+      - ./mediamtx/mediamtx.yml:/mediamtx.yml
+
+  nginx:
+    image: nginx:1.30.2-alpine
+    container_name: nginx
+    restart: unless-stopped
+    networks:
+      internal-net:
+    ports:
+      - "443:443"
+    # volumes:
+      # - /home/reis/drone_docker/nginx/drone.id.conf:/etc/nginx/conf.d/drone.conf:ro
+      # - /home/reis/drone_docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # - /home/reis/drone_docker/nginx/dhparam.pem:/etc/ssl/certs/dhparam.pem:ro
+      # - /home/reis/drone_docker/nginx/vinotek.id.key:/etc/ssl/private/vinotek.id.key:ro
+      # - /home/reis/drone_docker/nginx/vinotek.id.bundled.crt:/etc/ssl/certs/vinotek.id.bundled.crt:ro
+      # - /home/reis/drone_docker/nginx/snippets:/etc/nginx/snippets:ro
+    tmpfs:
+      - /run:uid=1000,gid=1000,mode=777
+      - /var/run:uid=1000,gid=1000,mode=777
+      - /var/cache/nginx:uid=1000,gid=1000,mode=777
+      - /tmp:uid=1000,gid=1000,mode=1777
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+
 
   portainer:
     image: portainer/portainer-ce:2.41.1-alpine
@@ -22,6 +59,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/reis/drone_docker_data/portainer/data:/data
+    ports:
+      - "9000:9000"
     expose:
       - "9000"
     networks:
@@ -99,7 +138,7 @@ services:
     volumes:
       - /home/reis/drone_docker_data/grafana:/var/lib/grafana
     env_file:
-      - /home/reis/drone_docker_data/grafana/.env
+      - /home/reis/drone_docker/grafana/.env
     expose:
       - "3000"
     ports:
@@ -171,8 +210,8 @@ services:
       - '--log.level=warn'
     expose:
       - "9115"
-    # ports:
-    #   - "9115:9115"
+    ports:
+      - "9115:9115"
     volumes:
       - ./blackbox_exporter/blackbox.yml:/etc/blackbox_exporter/config.yml
     read_only: true
@@ -253,7 +292,7 @@ services:
       - "--storage.path=/alertmanager"
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-       - /home/reis/drone_docker_data/alertmanager:/alertmanager
+      - /home/reis/drone_docker_data/alertmanager:/alertmanager
     read_only: true
     tmpfs:
       - /tmp

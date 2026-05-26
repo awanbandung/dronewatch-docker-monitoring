@@ -1,0 +1,146 @@
+groups:
+  - name: docker-alerts
+    rules:
+      # =========================
+      # BLACKBOX SERVICE DOWN
+      # =========================
+      - alert: Service Down
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service DOWN"
+          description: "{{ $labels.service }} tidak dapat diakses"
+
+      # =========================
+      # BLACKBOX EXPORTER DOWN
+      # =========================
+      - alert: Blackbox Exporter Down
+        expr: up{job="blackbox-http"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Blackbox Exporter DOWN"
+          description: "Blackbox Exporter tidak dapat diakses"
+
+      # =========================
+      # BLACKBOX SERVICE SLOW
+      # =========================
+      - alert: Service Slow
+        expr: |
+          probe_success{job="blackbox-http"} == 1
+          and
+          probe_duration_seconds{job="blackbox-http"} > 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Service Response Lambat"
+          description: '{{ $labels.service }} lambat ({{ printf "%.2f" $value }} detik)'
+
+      # =========================
+      # CONTAINER HIGH CPU
+      # =========================
+      - alert: High Container CPU
+        expr: |
+          (
+            rate(container_cpu_usage_seconds_total{name!="",image!=""}[5m])
+            /
+            machine_cpu_cores
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU Usage"
+          description: "Container {{ $labels.name }} di atas 80%"
+
+      # =========================
+      # CONTAINER HIGH MEMORY
+      # =========================
+      - alert: High Container Memory
+        expr: container_memory_usage_bytes{name!="", image!=""} > 2147483648
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory Usage"
+          description: "Container {{ $labels.name }} menggunakan memory > 2GB"
+
+      # =========================
+      # HOST HIGH CPU
+      # =========================
+      - alert: Host High CPU
+        expr: 100 - (
+          avg by(instance) (
+          rate(node_cpu_seconds_total{mode="idle"}[5m])
+          ) * 100
+          ) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host High CPU"
+          description: "CPU host {{ $labels.instance }} di atas 85%"
+
+      # =========================
+      # HOST HIGH MEMORY
+      # =========================
+      - alert: Host High Memory
+        expr: ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100) > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host High Memory"
+          description: "Memory host {{ $labels.instance }} di atas 90%"
+
+      # =========================
+      # HOST LOW DISK SPACE
+      # =========================
+      - alert: Host Low Disk Space
+        expr: (node_filesystem_avail_bytes{mountpoint="/", fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/", fstype!~"tmpfs|overlay"} * 100) < 15
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low Disk Space"
+          description: "Disk host {{ $labels.instance }} tersisa kurang dari 15%"
+
+      - alert: Host Down
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host DOWN"
+          description: "Host {{ $labels.instance }} tidak dapat diakses"
+
+      - alert: Cadvisor Down
+        expr: up{job="cadvisor"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "cAdvisor DOWN"
+          description: "cAdvisor {{ $labels.instance }} tidak dapat diakses"
+
+      # =========================
+      # OTHER TARGET DOWN (kecuali blackbox)
+      # =========================
+      - alert: Prometheus Target Missing
+        expr: |
+          up{
+            job!="blackbox-http",
+            job!="node-exporter",
+            job!="cadvisor",
+            job!="prometheus"
+          } == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus Target Down"
+          description: "{{ $labels.job }} target {{ $labels.instance }} down"
