@@ -80,5 +80,8 @@ receivers:
   # =========================
   - name: "email"
     email_configs:
-      - to: "wawan.rudiana@vinotek.id"
+      - to: "kadrone2026@gmail.com"
+        send_resolved: true
+        
+      - to: "awanbandung@gmail.com"
         send_resolved: true

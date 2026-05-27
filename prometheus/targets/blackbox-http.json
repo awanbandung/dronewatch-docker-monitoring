@@ -1,3 +1,4 @@
+ [
   {
     "targets": [
       "http://nginx:8081/health"
@@ -6,3 +7,4 @@
       "service": "nginx"
     }
   }
+]
