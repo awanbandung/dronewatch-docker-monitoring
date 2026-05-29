@@ -8,8 +8,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/stacks/shared_data/portainer/data:/data
-    ports:
-      - "9000:9000"
+    # ports:
+    #   - "9000:9000"
     expose:
       - "9000"
     networks:
@@ -36,6 +36,8 @@ services:
     image: prom/prometheus:v2.55.0
     container_name: monitoring-prometheus
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -90,8 +92,8 @@ services:
       - ./grafana/.env
     expose:
       - "3000"
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000"
     networks:
       - monitoring-net
     security_opt:
@@ -120,18 +122,21 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.11.1
     container_name: monitoring-node-exporter
-    hostname: docker-drc-01
+    hostname: dronewatch-prod
     pid: host
+    network_mode: host
     restart: unless-stopped
     command:
       - "--path.rootfs=/host"
+      - "--path.procfs=/host/proc" 
+      - "--path.sysfs=/host/sys"   
     volumes:
       - "/:/host:ro,rslave"
     read_only: true
     tmpfs:
       - /tmp
-    networks:
-      - monitoring-net
+    # networks:
+    #   - monitoring-net
     environment:
       TZ: Asia/Jakarta
     logging:
