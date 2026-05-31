@@ -84,7 +84,7 @@ export default function StreamingPage() {
 
   // Wall mode threshold — auto-collapse chrome, clear stale hover state
   useEffect(() => {
-    if (N >= 5) { setSidebarOpen(false); setGridOpen(false) }
+    if (N === 5) { setSidebarOpen(false); setGridOpen(false) }
     if (N > 1) setFeedFocused(false)
   }, [N])
 
