@@ -124,6 +124,39 @@ export default function StreamingPage() {
     }
   }, [])
 
+  // Escape: close grid + filter panel
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === 'Escape') { setGridOpen(false); setFilterOpen(false) }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  // Arrow ←/→: cycle focus through pinned panes; Delete: unpin focused
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.ctrlKey || e.altKey || e.metaKey) return
+      if (document.activeElement?.tagName === 'INPUT') return
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (pinnedDrones.length < 2) return
+        const idx  = pinnedDrones.findIndex(d => d.id === focusedDrone?.id)
+        const next = e.key === 'ArrowRight'
+          ? (idx + 1) % pinnedDrones.length
+          : (idx - 1 + pinnedDrones.length) % pinnedDrones.length
+        setFocusedDrone(pinnedDrones[next])
+        return
+      }
+
+      if (e.key === 'Delete') {
+        if (focusedDrone) handleUnpinDrone(focusedDrone.id)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [pinnedDrones, focusedDrone])
+
   // Filter shortcuts 1-5 (only when grid open, not when typing in search)
   const FILTER_KEYS = { '1': 'all', '2': 'green', '3': 'yellow', '4': 'red', '5': 'inactive' }
   useEffect(() => {
