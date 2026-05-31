@@ -1,4 +1,4 @@
-# reis-command — DroneWatch Fleet Command Platform
+# reis-command — R3 Fleet Command Platform
 
 50-drone fleet command center for air police / law enforcement.  
 Monorepo: React frontend (`apps/web`) + NestJS backend (`apps/api`).

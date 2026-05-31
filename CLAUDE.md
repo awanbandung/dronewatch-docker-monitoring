@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**DroneWatch** — 50-drone fleet command center for air police / law enforcement. Monorepo with React frontend (`apps/web`) and NestJS backend (`apps/api`).
+**R3 (Realtime Recognition and Response)** — 50-drone fleet command center for air police / law enforcement. Monorepo with React frontend (`apps/web`) and NestJS backend (`apps/api`).
 
 Login credentials for dev: `OPS-ADMIN1` / `admin`
 

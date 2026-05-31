@@ -1,12 +1,12 @@
 # CONTEXT.md
 
-Domain language, design decisions, and operational context for the DroneWatch fleet command platform.
+Domain language, design decisions, and operational context for the R3 fleet command platform.
 
 ---
 
 ## Product Identity
 
-**DroneWatch** — Fleet Command Platform  
+**R3 (Realtime Recognition and Response)** — Fleet Command Platform  
 **Client context:** Air police / law enforcement, Papua region (Nduga area), on-premise OVHcloud Bare Metal deployment  
 **Primary display:** Large command center "Video Tron" wall screen — always-on, passive display mode  
 **Default login:** `OPS-ADMIN1` / `admin` (dev only)

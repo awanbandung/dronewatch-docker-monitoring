@@ -1,6 +1,6 @@
 # @reis-command/api
 
-NestJS backend for the DroneWatch fleet command platform.
+NestJS backend for the R3 fleet command platform.
 
 See the [root README](../../README.md) for full setup and run instructions.
 

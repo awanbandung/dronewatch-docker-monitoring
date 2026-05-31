@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // DroneWatch design system
+        // R3 design system
         base:    '#0b0e14',
         panel:   '#0f1319',
         card:    '#131820',

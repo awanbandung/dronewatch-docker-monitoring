@@ -1,11 +1,11 @@
-# DroneWatch — Monorepo Setup Handoff
+# R3 — Monorepo Setup Handoff
 > Context document for continuing this work in Claude Code
 
 ---
 
 ## Project Overview
 
-**Project Name:** DroneWatch  
+**Project Name:** R3  
 **Client:** Air Police / Law Enforcement, Indonesia  
 **Objective:** Real-time command center to livestream 50 drones simultaneously on a large "video tron" display  
 **Long-term goal:** Evolve into a tiered SaaS product
@@ -61,7 +61,7 @@
 
 ### Target Structure
 ```
-dronewatch/
+r3/
 ├── apps/
 │   ├── web/          ← existing frontend (moved here, DO NOT rewrite)
 │   └── api/          ← new NestJS backend (scaffold from scratch)
@@ -257,23 +257,23 @@ Note the package manager (look for `package-lock.json` / `pnpm-lock.yaml` / `yar
 ### Step 3 — Move frontend into apps/web
 - `mkdir -p apps/web`
 - Move all existing files into `apps/web/`
-- Update `apps/web/package.json` name to `@dronewatch/web`
-- Verify it still runs: `pnpm --filter @dronewatch/web dev`
+- Update `apps/web/package.json` name to `@r3/web`
+- Verify it still runs: `pnpm --filter @r3/web dev`
 
 ### Step 4 — Scaffold NestJS backend
 ```bash
 cd apps
 npx @nestjs/cli new api --package-manager pnpm
 ```
-- Rename package to `@dronewatch/api`
+- Rename package to `@r3/api`
 - Add initial modules: `auth`, `drones`, `drone-groups`, `users`
 
 ### Step 5 — Create shared types package
 - `mkdir -p packages/types/src`
-- Create `packages/types/package.json` with name `@dronewatch/types`
+- Create `packages/types/package.json` with name `@r3/types`
 - Add `tsconfig.json`
 - Add the shared interfaces above
-- Add `@dronewatch/types` as dependency in both `apps/web` and `apps/api`
+- Add `@r3/types` as dependency in both `apps/web` and `apps/api`
 
 ---
 
