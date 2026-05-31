@@ -550,11 +550,10 @@ export default function StreamingPage() {
 function DronePane({ drone, focused, onFocus, onUnpin }) {
   const [hovered, setHovered] = useState(false)
 
-  const shadow = focused
-    ? 'inset 0 0 0 2px var(--accent)'
-    : hovered
-    ? 'inset 0 0 0 2px rgba(0,200,240,0.55)'
-    : 'inset 0 0 0 1px rgba(255,255,255,0.06)'
+  const borderColor = focused ? 'rgba(100,180,255,0.35)'
+    : hovered ? 'rgba(0,200,240,0.45)'
+    : 'rgba(255,255,255,0.06)'
+  const borderWidth = focused || hovered ? 2 : 1
 
   return (
     <div
@@ -562,17 +561,20 @@ function DronePane({ drone, focused, onFocus, onUnpin }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="relative overflow-hidden cursor-pointer group"
-      style={{
-        background: '#000',
-        boxShadow: shadow,
-        transition: 'box-shadow 0.15s ease',
-      }}
+      style={{ background: '#000' }}
     >
       <DroneVideo
         streamUrl={drone.stream_url}
         inactive={drone.status === 'inactive'}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       />
+
+      {/* Border overlay — sits above video so it's always visible */}
+      <div className="absolute inset-0 pointer-events-none z-10"
+           style={{
+             boxShadow: `inset 0 0 0 ${borderWidth}px ${borderColor}`,
+             transition: 'box-shadow 0.15s ease',
+           }} />
 
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-1.5 py-1 pointer-events-none"
