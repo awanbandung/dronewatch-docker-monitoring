@@ -103,6 +103,17 @@ export default function StreamingPage() {
 
   useEffect(() => () => clearTimeout(stopConfirmRef.current), [])
 
+  // Streaming-page shortcuts
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (!e.ctrlKey) return
+      if (e.key === 'g' || e.key === 'G') { e.preventDefault(); setGridOpen(v => !v) }
+      if (e.key === 'b' || e.key === 'B') { e.preventDefault(); setSidebarOpen(v => !v) }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
+
   function handlePinDrone(drone) {
     const alreadyPinned = pinnedDrones.some(d => d.id === drone.id)
     if (alreadyPinned) { setFocusedDrone(drone); return }
