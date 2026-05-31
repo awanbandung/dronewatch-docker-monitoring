@@ -2,10 +2,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useClock } from '@/hooks/useClock.js'
+import { useAuth } from '@/hooks/useAuth.js'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { time, date } = useClock()
+  const { login } = useAuth()
 
   const [division, setDivision]   = useState('')
   const [access, setAccess]       = useState('')
@@ -28,23 +30,20 @@ export default function LoginPage() {
     setOpId(e.target.value.toUpperCase())
   }
 
-  function handleLogin() {
+  async function handleLogin() {
     if (!opId || !password) return
     setLoading(true)
     setError('')
-    setTimeout(() => {
+    try {
+      await login(opId, password)
+      navigate('/dashboard')
+    } catch {
+      const next = attempts + 1
+      setAttempts(next)
+      setError(`AUTHENTICATION FAILED — Invalid credentials. Attempt ${next} logged. ${Math.max(0, 5 - next)} retries remaining.`)
+    } finally {
       setLoading(false)
-      // In production: validate against backend, store JWT
-      if (opId === 'OPS-ADMIN1' && password === 'admin') {
-        localStorage.setItem('dw_operator', opId)
-        localStorage.setItem('dw_level', access || 'COMMANDER')
-        navigate('/dashboard')
-      } else {
-        const next = attempts + 1
-        setAttempts(next)
-        setError(`AUTHENTICATION FAILED — Invalid credentials. Attempt ${next} logged. ${Math.max(0, 5 - next)} retries remaining.`)
-      }
-    }, 1800)
+    }
   }
 
   function handleKeyDown(e) {

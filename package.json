@@ -1,6 +1,7 @@
 {
   "name": "reis-command",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
@@ -8,6 +9,9 @@
     "type-check": "turbo type-check"
   },
   "devDependencies": {
-    "turbo": "latest"
+    "turbo": "^2.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@nestjs/core", "bcrypt", "esbuild", "unrs-resolver"]
   }
 }

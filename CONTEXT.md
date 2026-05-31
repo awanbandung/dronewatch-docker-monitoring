@@ -20,7 +20,7 @@ Domain language, design decisions, and operational context for the DroneWatch fl
 |---|---|
 | Operator ID | Format `OPS-XXXXXXXX` — 6–8 alphanumeric chars after prefix |
 | Division | Organizational unit: AIR UNIT ALPHA/BRAVO/CHARLIE, INTEL OPS, COMMAND HQ |
-| Access Level | OPERATOR < SUPERVISOR < COMMANDER < ADMIN |
+| Role | Three tiers: `user` (view-only) < `admin` (manage users + view) < `super_admin` (full access, system config) |
 | Terminal | The physical workstation / client machine |
 
 ### Drone Fleet

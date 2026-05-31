@@ -4,17 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**DroneWatch** — React frontend prototype for a 50-drone fleet command center targeting air police / law enforcement. Phase 1 is a pure UI prototype with simulated data; future phases wire in a NestJS backend, LiveKit WebRTC video, and MapLibre maps.
+**DroneWatch** — 50-drone fleet command center for air police / law enforcement. Monorepo with React frontend (`apps/web`) and NestJS backend (`apps/api`).
 
 Login credentials for dev: `OPS-ADMIN1` / `admin`
 
 ## Commands
 
 ```bash
-npm install       # install deps
-npm run dev       # dev server → http://localhost:5173
-npm run build     # production build
-npm run preview   # preview production build locally
+# Root (runs all apps via Turborepo)
+pnpm install       # install all deps
+pnpm dev           # dev server for all apps
+pnpm build         # build all apps
+
+# Frontend only (apps/web)
+pnpm --filter @reis-command/web dev       # → http://localhost:5173
+pnpm --filter @reis-command/web build
+
+# Backend only (apps/api)
+pnpm --filter @reis-command/api dev       # → http://localhost:3000
+pnpm --filter @reis-command/api build
 ```
 
 No test runner is configured yet.
@@ -35,7 +43,7 @@ No test runner is configured yet.
 **Mock data layer (temporary):**
 - `src/data/drones.js` — 50 statically-generated drones. Replace with WebSocket/MQTT in Phase 3.
 - `src/hooks/useTelemetry.js` — simulated telemetry ticker. Replace with real WS hook in Phase 3.
-- `src/components/stream/DroneCanvas.jsx` — animated canvas fake feed. Replace with LiveKit `<VideoTrack />` in Phase 4.
+- `src/components/stream/DroneCanvas.jsx` — animated canvas fake feed. Replace with HLS.js `<video>` player in Phase 3.
 
 **Path alias:** `@` maps to `./src` (configured in `vite.config.js`).
 
@@ -58,9 +66,12 @@ Each drone has `status: 'green' | 'yellow' | 'red' | 'inactive'`. This drives co
 ## Phase Roadmap
 
 - **Phase 2** — GPS Tracker (`/gps`) and Inventory Asset (`/inventory`) pages
-- **Phase 3** — NestJS backend: PostgreSQL/TimescaleDB, Redis, MQTT, WebSocket gateway
-- **Phase 4** — LiveKit integration: replace canvas fakes with real WebRTC video tracks
+- **Phase 3** — NestJS backend live: PostgreSQL, JWT auth, HLS.js stream integration (replace canvas fakes)
+- **Phase 4** — MQTT telemetry, WebSocket gateway, TimescaleDB, MapLibre maps
 
 ## Tech Stack
 
-React 18 · Vite · React Router v6 · Tailwind CSS v3 · lucide-react icons · clsx + tailwind-merge · LiveKit SDK (installed, used in Phase 4) · Deployed on OVHcloud Bare Metal
+**Frontend:** React 18 · Vite · React Router v6 · Tailwind CSS v3 · lucide-react · HLS.js (stream playback)
+**Backend:** NestJS · PostgreSQL · JWT auth
+**Streaming:** RTMP ingress → HLS output at `stream.r3.army/live/drone{n}/` (exact .m3u8 path TBD)
+**Deployed:** OVHcloud Bare Metal
