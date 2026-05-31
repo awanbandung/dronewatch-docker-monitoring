@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 
 async function startWhep(whepUrl, videoEl) {
-  const pc = new RTCPeerConnection()
+  const pc = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+  })
   pc.addTransceiver('video', { direction: 'recvonly' })
   pc.addTransceiver('audio', { direction: 'recvonly' })
 
@@ -9,13 +11,26 @@ async function startWhep(whepUrl, videoEl) {
     if (e.track.kind === 'video') videoEl.srcObject = e.streams[0]
   }
 
+  pc.onconnectionstatechange = () => {
+    console.log(`[WHEP] ${whepUrl.split('/').at(-2)} →`, pc.connectionState)
+  }
+
   const offer = await pc.createOffer()
   await pc.setLocalDescription(offer)
+
+  // Wait for ICE gathering to complete so candidates are in the SDP
+  await new Promise(resolve => {
+    if (pc.iceGatheringState === 'complete') { resolve(); return }
+    pc.onicegatheringstatechange = () => {
+      if (pc.iceGatheringState === 'complete') resolve()
+    }
+    setTimeout(resolve, 5000) // fallback: proceed after 5s
+  })
 
   const res = await fetch(whepUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/sdp' },
-    body: offer.sdp,
+    body: pc.localDescription.sdp, // full SDP with ICE candidates
   })
 
   if (!res.ok) throw new Error(`WHEP ${res.status}`)

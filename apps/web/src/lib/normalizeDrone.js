@@ -1,7 +1,7 @@
 // Maps API drone → UI drone shape. Remove in Phase 3 when real telemetry arrives.
 const AREAS = ['Area 1', 'Area 2', 'Area 3', 'Area 4', 'Area 5']
 
-const STATUS_MAP = { active: 'green', offline: 'inactive', maintenance: 'yellow' }
+const STATUS_MAP = { active: 'green', offline: 'red', maintenance: 'yellow' }
 
 export function normalizeDrone(d) {
   const n       = parseInt(d.code.replace('drone', ''))
