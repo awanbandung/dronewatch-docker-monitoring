@@ -21,6 +21,8 @@ const DRONE_LOGS = [
 // Pane FPS budget: fewer panes = richer animation
 function paneFps(n) { return n === 1 ? 60 : n <= 4 ? 24 : 12 }
 
+const FILTER_KEYS = { '1': 'all', '2': 'green', '3': 'yellow', '4': 'red', '5': 'inactive' }
+
 export default function StreamingPage() {
   const { drones, loading } = useDrones()
   const [pinnedDrones, setPinnedDrones] = useState([])
@@ -141,6 +143,7 @@ export default function StreamingPage() {
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         if (pinnedDrones.length < 2) return
+        e.preventDefault()
         const idx  = pinnedDrones.findIndex(d => d.id === focusedDrone?.id)
         const next = e.key === 'ArrowRight'
           ? (idx + 1) % pinnedDrones.length
@@ -158,7 +161,6 @@ export default function StreamingPage() {
   }, [pinnedDrones, focusedDrone])
 
   // Filter shortcuts 1-5 (only when grid open, not when typing in search)
-  const FILTER_KEYS = { '1': 'all', '2': 'green', '3': 'yellow', '4': 'red', '5': 'inactive' }
   useEffect(() => {
     if (!gridOpen) return
     function onKeyDown(e) {
