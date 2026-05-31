@@ -12,7 +12,7 @@ export function normalizeDrone(d) {
 
   return {
     ...d,
-    id:          d.label,           // 'DRN-001' — UI uses this as display ID
+    id:          d.label ?? d.code,  // 'DRN-001' — UI uses this as display ID
     area,
     droneNum,
     status,

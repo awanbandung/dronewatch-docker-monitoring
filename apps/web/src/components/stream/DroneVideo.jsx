@@ -47,11 +47,16 @@ export default function DroneVideo({ streamUrl, inactive = false, className = ''
     const video = videoRef.current
     if (!video || inactive || !streamUrl) return
 
+    let closed = false
     startWhep(streamUrl, video)
-      .then(pc => { pcRef.current = pc })
+      .then(pc => {
+        if (closed) { pc.close(); return }
+        pcRef.current = pc
+      })
       .catch(() => {})  // stream offline — video stays blank
 
     return () => {
+      closed = true
       pcRef.current?.close()
       pcRef.current = null
     }

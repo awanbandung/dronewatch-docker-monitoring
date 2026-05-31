@@ -1,105 +1,188 @@
-# DroneWatch — React Frontend
+# reis-command — DroneWatch Fleet Command Platform
 
-Fleet Command Platform UI — Phase 1
+50-drone fleet command center for air police / law enforcement.  
+Monorepo: React frontend (`apps/web`) + NestJS backend (`apps/api`).
 
-## Quick Start (Claude Code / Terminal)
+---
+
+## Prerequisites
+
+- **Node.js** 20+
+- **pnpm** 10+ (`npm install -g pnpm`)
+- **PostgreSQL** running locally (or Docker — see below)
+- **Docker** (optional, for PostgreSQL)
+
+---
+
+## Quick Start
+
+### 1. Install dependencies
+```bash
+pnpm install
+```
+
+### 2. Set up the database
+
+If you're using Docker (PostgreSQL already running):
+```bash
+docker exec postgres16 psql -U postgres -c 'CREATE DATABASE reis_command;'
+```
+
+Or create manually in your local PostgreSQL:
+```bash
+createdb reis_command
+```
+
+### 3. Configure environment
+```bash
+cp apps/api/.env.example apps/api/.env
+# Edit apps/api/.env — set DB_PASS and a strong JWT_SECRET
+```
+
+### 4. Seed the database
+```bash
+pnpm --filter @reis-command/api seed
+# Creates: 1 super_admin user + 50 drones with stream URLs
+```
+
+### 5. Start everything
+```bash
+pnpm dev
+# Frontend → http://localhost:5173
+# Backend  → http://localhost:3000/api
+```
+
+### 6. Log in
+```
+URL:      http://localhost:5173
+Username: OPS-ADMIN1
+Password: admin
+```
+
+---
+
+## Drone Status Management
+
+Drones stream via RTMP ingress → WebRTC/WHEP. To mark a drone as live:
 
 ```bash
-# 1. Install dependencies
-npm install
+# Mark drone1-3 as active (streaming)
+docker exec postgres16 psql -U postgres -d reis_command \
+  -c "UPDATE drones SET status='active' WHERE code IN ('drone1','drone2','drone3');"
 
-# 2. Start dev server
-npm run dev
-
-# 3. Open in browser
-# → http://localhost:5173
-# → Login with: OPS-ADMIN1 / admin
+# Mark all drones active
+docker exec postgres16 psql -U postgres -d reis_command \
+  -c "UPDATE drones SET status='active';"
 ```
+
+Stream endpoints:
+- **Ingest (RTMP):** `rtmp://ingest.r3.army/live/drone{n}` (drones push here)
+- **Watch (WHEP):** `https://stream.r3.army/live/drone{n}/whep` (browser pulls here)
+
+---
+
+## Commands
+
+```bash
+# Root — runs all apps via Turborepo
+pnpm dev           # start all apps
+pnpm build         # build all apps
+
+# Frontend only
+pnpm --filter @reis-command/web dev       # → http://localhost:5173
+pnpm --filter @reis-command/web build
+
+# Backend only
+pnpm --filter @reis-command/api dev       # → http://localhost:3000
+pnpm --filter @reis-command/api build
+pnpm --filter @reis-command/api seed      # seed DB
+
+# Database migrations (run when schema is stable)
+pnpm --filter @reis-command/api migration:generate src/migrations/InitSchema
+pnpm --filter @reis-command/api migration:run
+pnpm --filter @reis-command/api migration:revert
+```
+
+---
 
 ## Project Structure
 
 ```
-src/
-├── main.jsx                    # Entry point, HashRouter
-├── App.jsx                     # Route definitions
-├── index.css                   # Design tokens, Tailwind base
-│
-├── data/
-│   └── drones.js               # 50 mock drones — replace with WebSocket in Phase C
-│
-├── hooks/
-│   ├── useClock.js             # Live WIB clock
-│   └── useTelemetry.js         # Simulated telemetry — replace with WS in Phase C
-│
-├── components/
-│   ├── layout/
-│   │   ├── TopNav.jsx          # Shared nav with tabs, live clock, operator info
-│   │   └── BottomBar.jsx       # Shared bottom status bar
-│   └── stream/
-│       ├── DroneCanvas.jsx     # Animated aerial feed — replace with LiveKit <VideoTrack /> in Phase D
-│       └── DroneThumb.jsx      # Reusable thumbnail — used in dashboard + streaming grid
-│
-└── pages/
-    ├── LoginPage.jsx           # /login — auth screen
-    ├── DashboardPage.jsx       # /dashboard — ops overview
-    ├── StreamingPage.jsx       # /streaming — operator workstation
-    └── ComingSoon.jsx          # /gps and /inventory — Phase 2 placeholder
+reis-command/
+├── apps/
+│   ├── web/                      # React + Vite frontend
+│   │   └── src/
+│   │       ├── App.jsx           # Route table + RequireAuth guard
+│   │       ├── lib/
+│   │       │   ├── api.js        # API client (JWT auth header)
+│   │       │   └── normalizeDrone.js  # Maps API → UI drone shape
+│   │       ├── hooks/
+│   │       │   ├── useAuth.js    # Login/logout/token state
+│   │       │   ├── useDrones.js  # Fetch drone list from API
+│   │       │   └── useTelemetry.js    # Simulated telemetry (Phase 4: replace with WS)
+│   │       ├── components/stream/
+│   │       │   ├── DroneVideo.jsx     # WebRTC/WHEP player
+│   │       │   └── DroneThumb.jsx     # Grid thumbnail
+│   │       └── pages/
+│   │           ├── LoginPage.jsx
+│   │           ├── DashboardPage.jsx
+│   │           ├── StreamingPage.jsx
+│   │           └── ComingSoon.jsx
+│   │
+│   └── api/                      # NestJS backend
+│       └── src/
+│           ├── app.module.ts     # Root module (TypeORM + ConfigModule)
+│           ├── auth/             # JWT auth (login, /me)
+│           ├── drones/           # GET /drones, GET /drones/:id
+│           ├── users/            # User CRUD (admin only)
+│           ├── entities/         # TypeORM entities
+│           └── seed.ts           # DB seed script
+└── turbo.json
 ```
+
+---
 
 ## Routes
 
-| Route        | Page            | Status     |
-|--------------|-----------------|------------|
-| `/login`     | LoginPage        | ✅ Active  |
-| `/dashboard` | DashboardPage    | ✅ Active  |
-| `/streaming` | StreamingPage    | ✅ Active  |
-| `/gps`       | ComingSoon       | 🚧 Phase 2 |
-| `/inventory` | ComingSoon       | 🚧 Phase 2 |
+| Route | Page | Auth |
+|---|---|---|
+| `/login` | LoginPage | Public |
+| `/dashboard` | DashboardPage | Required |
+| `/streaming` | StreamingPage | Required |
+| `/gps` | ComingSoon | Required — Phase 2 |
+| `/inventory` | ComingSoon | Required — Phase 2 |
+
+## API Endpoints
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/login` | Public | Login → JWT |
+| GET | `/api/auth/me` | JWT | Current user |
+| GET | `/api/drones` | JWT | All 50 drones |
+| GET | `/api/drones/:id` | JWT | Single drone |
+| GET | `/api/users` | admin+ | List users |
+| POST | `/api/users` | admin+ | Create user |
+| DELETE | `/api/users/:id` | super_admin | Delete user |
+
+---
 
 ## Phase Roadmap
 
-### Phase 1 (this repo) — Frontend UI prototype
-- [x] Login screen with operator auth
-- [x] Dashboard — operation map, KPI strip, GPS tracker, inventory, alerts
-- [x] Streaming — featured feed, telemetry HUD, mini nav map, 50-drone grid
-- [x] GPS Tracker & Inventory Asset — coming soon placeholders
+| Phase | Status | Scope |
+|---|---|---|
+| **1 — UI prototype** | ✅ Done | React frontend, mock data |
+| **2 — Backend + streaming** | ✅ Done | NestJS, PostgreSQL, JWT, WebRTC/WHEP |
+| **3 — GPS + Inventory pages** | 🔲 Next | `/gps`, `/inventory` |
+| **4 — Live telemetry** | 🔲 Future | MQTT, WebSocket gateway, TimescaleDB, MapLibre |
 
-### Phase 2 — Additional pages (Claude.ai)
-- [ ] GPS Tracker page (`/gps`)
-- [ ] Inventory Asset page (`/inventory`)
-
-### Phase 3 — Backend (Claude Code)
-- [ ] NestJS backend scaffold
-- [ ] PostgreSQL + TimescaleDB schema
-- [ ] Redis session/pub-sub
-- [ ] MQTT gateway for drone telemetry
-- [ ] WebSocket gateway (replace `useTelemetry` simulation)
-- [ ] LiveKit room management API
-
-### Phase 4 — LiveKit Integration (Claude Code)
-- [ ] Replace `<DroneCanvas />` with LiveKit `<VideoTrack />`
-- [ ] Replace `<DroneThumb canvas />` with LiveKit room participants
-- [ ] LiveKit Ingress: RTSP → WebRTC via FFmpeg
-- [ ] LiveKit Egress: recording to object storage
-
-## Design System
-
-See `tailwind.config.js` and `src/index.css` for the full token set.
-
-Key values:
-- Background: `#0b0e14`
-- Accent: `#00c8f0` (cyan)
-- Danger: `#ff4040` · Warning: `#f0a500` · Success: `#00e676`
-- Fonts: Share Tech Mono (telemetry) · Barlow Condensed (headers) · Barlow (body)
+---
 
 ## Tech Stack
 
 | Layer | Tech |
 |---|---|
-| Framework | React 18 + Vite |
-| Routing | React Router v6 (HashRouter) |
-| Styling | Tailwind CSS v3 + custom CSS |
-| Video (Phase D) | LiveKit `@livekit/components-react` |
-| Mapping (Phase C) | MapLibre GL (replace SVG maps) |
-| Build | Vite |
-| Deploy | OVHcloud Bare Metal (on-prem) |
+| Frontend | React 18 · Vite · React Router v6 · Tailwind CSS v3 |
+| Backend | NestJS · TypeORM · PostgreSQL · JWT |
+| Streaming | RTMP ingress → WebRTC/WHEP (MediaMTX) |
+| Build | Turborepo + pnpm workspaces |
+| Deploy | OVHcloud Bare Metal |
