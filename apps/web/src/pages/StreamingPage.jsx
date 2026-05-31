@@ -124,6 +124,22 @@ export default function StreamingPage() {
     }
   }, [])
 
+  // Filter shortcuts 1-5 (only when grid open, not when typing in search)
+  const FILTER_KEYS = { '1': 'all', '2': 'green', '3': 'yellow', '4': 'red', '5': 'inactive' }
+  useEffect(() => {
+    if (!gridOpen) return
+    function onKeyDown(e) {
+      if (e.ctrlKey || e.altKey || e.metaKey) return
+      if (document.activeElement?.tagName === 'INPUT') return
+      const filter = FILTER_KEYS[e.key]
+      if (!filter) return
+      setActiveFilter(filter)
+      setFilterOpen(true)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [gridOpen])
+
   function handlePinDrone(drone) {
     const alreadyPinned = pinnedDrones.some(d => d.id === drone.id)
     if (alreadyPinned) { setFocusedDrone(drone); return }
@@ -523,17 +539,18 @@ export default function StreamingPage() {
               {filterOpen && (
                 <div className="flex gap-1.5 px-3 py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   {[
-                    { key: 'all',      label: 'ALL',           activeStyle: { background: 'var(--accent-dim)',    border: '1px solid rgba(0,200,240,0.28)', color: 'var(--accent)'  } },
-                    { key: 'green',    label: '● OPERASIONAL', activeStyle: { background: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.3)', color: 'var(--success)' } },
-                    { key: 'yellow',   label: '● LOW BATTERY', activeStyle: { background: 'rgba(240,165,0,0.1)', border: '1px solid rgba(240,165,0,0.3)', color: 'var(--warning)' } },
-                    { key: 'red',      label: '● LOST SIGNAL', activeStyle: { background: 'rgba(255,64,64,0.1)', border: '1px solid rgba(255,64,64,0.3)', color: 'var(--danger)'  } },
-                    { key: 'inactive', label: '● STANDBY',     activeStyle: { background: 'rgba(74,85,104,0.1)', border: '1px solid rgba(74,85,104,0.3)', color: '#6b7b90'        } },
+                    { key: 'all',      label: 'ALL',           hint: '1', activeStyle: { background: 'var(--accent-dim)',    border: '1px solid rgba(0,200,240,0.28)', color: 'var(--accent)'  } },
+                    { key: 'green',    label: '● OPERASIONAL', hint: '2', activeStyle: { background: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.3)', color: 'var(--success)' } },
+                    { key: 'yellow',   label: '● LOW BATTERY', hint: '3', activeStyle: { background: 'rgba(240,165,0,0.1)', border: '1px solid rgba(240,165,0,0.3)', color: 'var(--warning)' } },
+                    { key: 'red',      label: '● LOST SIGNAL', hint: '4', activeStyle: { background: 'rgba(255,64,64,0.1)', border: '1px solid rgba(255,64,64,0.3)', color: 'var(--danger)'  } },
+                    { key: 'inactive', label: '● STANDBY',     hint: '5', activeStyle: { background: 'rgba(74,85,104,0.1)', border: '1px solid rgba(74,85,104,0.3)', color: '#6b7b90'        } },
                   ].map(f => (
                     <button key={f.key}
                             onClick={() => setActiveFilter(f.key)}
-                            className="mono text-[8px] px-2.5 py-0.5 rounded-sm transition-all"
+                            className="mono text-[8px] px-2.5 py-0.5 rounded-sm transition-all flex items-center gap-1"
                             style={activeFilter === f.key ? f.activeStyle : { border: '1px solid rgba(255,255,255,0.10)', color: '#6b7b90' }}>
                       {f.label}
+                      <span className="mono text-[6px] opacity-40">{f.hint}</span>
                     </button>
                   ))}
                 </div>
