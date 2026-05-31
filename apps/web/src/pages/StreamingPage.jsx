@@ -550,10 +550,10 @@ export default function StreamingPage() {
 function DronePane({ drone, focused, onFocus, onUnpin }) {
   const [hovered, setHovered] = useState(false)
 
-  const borderColor = focused ? 'rgba(100,180,255,0.35)'
-    : hovered ? 'rgba(0,200,240,0.45)'
+  const borderColor = focused ? 'rgba(0,200,240,0.75)'
+    : hovered ? 'rgba(0,200,240,0.4)'
     : 'rgba(255,255,255,0.06)'
-  const borderWidth = focused || hovered ? 2 : 1
+  const borderWidth = focused ? 3 : hovered ? 2 : 1
 
   return (
     <div
