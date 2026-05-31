@@ -4,10 +4,10 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useClock } from '@/hooks/useClock.js'
 
 const TABS = [
-  { path: '/dashboard', icon: '⊞', label: 'DASHBOARD' },
-  { path: '/streaming', icon: '▶', label: 'STREAMING' },
-  { path: '/gps',       icon: '◎', label: 'GPS TRACKER',     disabled: true },
-  { path: '/inventory', icon: '≡', label: 'INVENTORY ASSET', disabled: true },
+  { path: '/dashboard', icon: '⊞', label: 'DASHBOARD',       shortcutKey: '1' },
+  { path: '/streaming', icon: '▶', label: 'STREAMING',       shortcutKey: '2' },
+  { path: '/gps',       icon: '◎', label: 'GPS TRACKER',     shortcutKey: '3', disabled: true },
+  { path: '/inventory', icon: '≡', label: 'INVENTORY ASSET', shortcutKey: '4', disabled: true },
 ]
 
 export default function TopNav({ streamCount = 47 }) {
@@ -16,7 +16,8 @@ export default function TopNav({ streamCount = 47 }) {
   const operator = localStorage.getItem('dw_operator') || 'OPS-ADMIN1'
   const level    = localStorage.getItem('dw_level')    || 'COMMANDER'
 
-  const [open, setOpen] = useState(false)
+  const [open, setOpen]           = useState(false)
+  const [ctrlHeld, setCtrlHeld]   = useState(false)
   const dropRef = useRef(null)
 
   // Close on outside click
@@ -27,6 +28,30 @@ export default function TopNav({ streamCount = 47 }) {
     document.addEventListener('mousedown', onMouseDown)
     return () => document.removeEventListener('mousedown', onMouseDown)
   }, [])
+
+  // Global nav shortcuts: Ctrl+1-4
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === 'Control') { setCtrlHeld(true); return }
+      if (!e.ctrlKey) return
+      const tab = TABS.find(t => t.shortcutKey === e.key)
+      if (!tab) return
+      e.preventDefault()
+      if (!tab.disabled) navigate(tab.path)
+    }
+    function onKeyUp(e) {
+      if (e.key === 'Control') setCtrlHeld(false)
+    }
+    function onBlur() { setCtrlHeld(false) }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('keyup',   onKeyUp)
+    window.addEventListener('blur',      onBlur)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('keyup',   onKeyUp)
+      window.removeEventListener('blur',      onBlur)
+    }
+  }, [navigate])
 
   function terminateSession() {
     localStorage.removeItem('dw_operator')
@@ -43,14 +68,14 @@ export default function TopNav({ streamCount = 47 }) {
            style={{ borderRight: '1px solid rgba(255,255,255,0.10)' }}>
         <BrandIcon />
         <span className="hd font-bold text-sm tracking-[3px] uppercase text-[#dde4ef]">
-          DroneWatch
+          R3
         </span>
       </div>
 
       {/* Tabs */}
       <div className="flex items-stretch flex-1">
         {TABS.map(tab => (
-          <TabItem key={tab.path} {...tab} />
+          <TabItem key={tab.path} {...tab} ctrlHeld={ctrlHeld} />
         ))}
       </div>
 
@@ -106,26 +131,45 @@ export default function TopNav({ streamCount = 47 }) {
   )
 }
 
-function TabItem({ path, icon, label, disabled }) {
+function ShortcutBadge({ shortcutKey, dim }) {
+  return (
+    <span className="mono text-[7px] ml-1.5 px-1 rounded"
+          style={{
+            background: dim ? 'rgba(255,255,255,0.05)' : 'var(--accent-dim)',
+            color: dim ? '#4a5568' : 'var(--accent)',
+            border: `1px solid ${dim ? 'rgba(255,255,255,0.08)' : 'rgba(0,200,240,0.3)'}`,
+            letterSpacing: '1px',
+          }}>
+      ^{shortcutKey}
+    </span>
+  )
+}
+
+function TabItem({ path, icon, label, shortcutKey, disabled, ctrlHeld }) {
   if (disabled) {
     return (
       <span className="nav-tab opacity-40 cursor-not-allowed select-none"
             title="Coming soon">
         <span className="text-[10px]">{icon}</span>
         {label}
-        <span className="mono text-[7px] ml-1 px-1 rounded"
-              style={{ background: 'rgba(240,165,0,0.15)', color: 'var(--warning)',
-                       border: '1px solid rgba(240,165,0,0.25)', letterSpacing: '1px' }}>
-          SOON
-        </span>
+        {ctrlHeld
+          ? <ShortcutBadge shortcutKey={shortcutKey} dim />
+          : <span className="mono text-[7px] ml-1 px-1 rounded"
+                  style={{ background: 'rgba(240,165,0,0.15)', color: 'var(--warning)',
+                           border: '1px solid rgba(240,165,0,0.25)', letterSpacing: '1px' }}>
+              SOON
+            </span>
+        }
       </span>
     )
   }
   return (
     <NavLink to={path}
-      className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}>
+      className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}
+      title={`Ctrl+${shortcutKey}`}>
       <span className="text-[10px]">{icon}</span>
       {label}
+      {ctrlHeld && <ShortcutBadge shortcutKey={shortcutKey} />}
     </NavLink>
   )
 }

@@ -110,10 +110,10 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <ShieldLogo />
           <div className="hd font-bold text-[34px] tracking-[6px] uppercase text-[#dde4ef] leading-none mb-1">
-            DroneWatch
+            R3
           </div>
           <div className="mono text-[10px] tracking-[3px] uppercase" style={{ color: 'var(--accent)' }}>
-            Fleet Command Platform
+            Realtime Recognition and Response
           </div>
           <div className="flex items-center gap-3 mt-4">
             <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
