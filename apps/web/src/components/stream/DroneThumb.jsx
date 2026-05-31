@@ -1,5 +1,5 @@
 // src/components/stream/DroneThumb.jsx
-import DroneCanvas from './DroneCanvas.jsx'
+import DroneVideo from './DroneVideo.jsx'
 import { STATUS_COLORS } from '@/data/drones.js'
 
 const BORDER_COLORS = {
@@ -35,12 +35,10 @@ export default function DroneThumb({
         opacity: drone.status === 'inactive' ? 0.55 : 1,
       }}
     >
-      <DroneCanvas
-        hue={drone.status === 'inactive' ? 200 : (100 + Math.abs(drone.id.charCodeAt(4) * 3) % 40)}
-        noisy={drone.status === 'red'}
+      <DroneVideo
+        streamUrl={drone.stream_url}
         inactive={drone.status === 'inactive'}
-        fps={12}
-        style={{ width, height }}
+        style={{ width, height, objectFit: 'cover' }}
       />
 
       {/* REC badge or pinned indicator — share top-right slot */}

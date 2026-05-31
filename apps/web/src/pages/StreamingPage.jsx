@@ -2,19 +2,13 @@
 import { useState, useRef, useEffect } from 'react'
 import TopNav    from '@/components/layout/TopNav.jsx'
 import BottomBar from '@/components/layout/BottomBar.jsx'
-import DroneCanvas from '@/components/stream/DroneCanvas.jsx'
+import DroneVideo  from '@/components/stream/DroneVideo.jsx'
 import DroneThumb  from '@/components/stream/DroneThumb.jsx'
-import { DRONES, STATUS_COLORS, STATUS_LABELS, formatFlightTime, formatUptime } from '@/data/drones.js'
+import { STATUS_COLORS, STATUS_LABELS, formatFlightTime, formatUptime } from '@/data/drones.js'
 import { useTelemetry } from '@/hooks/useTelemetry.js'
+import { useDrones } from '@/hooks/useDrones.js'
 
 function padZ(n) { return String(n).padStart(2, '0') }
-
-const FLEET_COUNTS = {
-  green:    DRONES.filter(d => d.status === 'green').length,
-  yellow:   DRONES.filter(d => d.status === 'yellow').length,
-  red:      DRONES.filter(d => d.status === 'red').length,
-  inactive: DRONES.filter(d => d.status === 'inactive').length,
-}
 
 const DRONE_LOGS = [
   { msg: 'Battery level under 50% — consider RTH', level: 'warn', time: '10:32:18' },
@@ -28,8 +22,9 @@ const DRONE_LOGS = [
 function paneFps(n) { return n === 1 ? 60 : n <= 4 ? 24 : 12 }
 
 export default function StreamingPage() {
-  const [pinnedDrones, setPinnedDrones] = useState([DRONES[0]])
-  const [focusedDrone, setFocusedDrone] = useState(DRONES[0])
+  const { drones, loading } = useDrones()
+  const [pinnedDrones, setPinnedDrones] = useState([])
+  const [focusedDrone, setFocusedDrone] = useState(null)
   const [sidebarOpen, setSidebarOpen]   = useState(true)
   const [recording, setRecording]       = useState(false)
   const [recSec, setRecSec]             = useState(0)
@@ -39,10 +34,19 @@ export default function StreamingPage() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery]   = useState('')
   const [sortAsc, setSortAsc]           = useState(true)
-  const [flightSec, setFlightSec]       = useState(DRONES[0].flightSec)
+  const [flightSec, setFlightSec]       = useState(0)
   const [gridOpen, setGridOpen]         = useState(false)
   const [stopConfirm, setStopConfirm]   = useState(false)
   const [feedFocused, setFeedFocused]   = useState(false)
+
+  // Initialise pinned/focused once drones load
+  useEffect(() => {
+    if (drones.length && pinnedDrones.length === 0) {
+      setPinnedDrones([drones[0]])
+      setFocusedDrone(drones[0])
+      setFlightSec(drones[0].flightSec)
+    }
+  }, [drones])
 
   const recTimerRef    = useRef(null)
   const stopConfirmRef = useRef(null)
@@ -53,6 +57,13 @@ export default function StreamingPage() {
   const fps  = paneFps(N)
 
   const telem = useTelemetry(focusedDrone)
+
+  const fleetCounts = {
+    green:    drones.filter(d => d.status === 'green').length,
+    yellow:   drones.filter(d => d.status === 'yellow').length,
+    red:      drones.filter(d => d.status === 'red').length,
+    inactive: drones.filter(d => d.status === 'inactive').length,
+  }
 
   useEffect(() => {
     setFlightSec(focusedDrone.flightSec)
@@ -125,7 +136,7 @@ export default function StreamingPage() {
     setTimeout(() => setSnapNotify(false), 2200)
   }
 
-  const filteredDrones = DRONES
+  const filteredDrones = drones
     .filter(d => {
       const matchFilter = activeFilter === 'all' || d.status === activeFilter
       const q = searchQuery.toLowerCase()
@@ -141,7 +152,16 @@ export default function StreamingPage() {
     : telem.bat > 50 ? 'var(--success)'
     : telem.bat > 20 ? 'var(--warning)'
     : 'var(--danger)'
-  const hue = 100 + (parseInt(focusedDrone.id.replace('DRN-', '')) * 3) % 40
+
+  if (loading || !focusedDrone) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#0b0e14' }}>
+        <span className="mono text-[11px] tracking-[3px]" style={{ color: 'var(--accent)' }}>
+          LOADING FLEET...
+        </span>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 flex flex-col" style={{ background: '#0b0e14' }}>
@@ -171,10 +191,8 @@ export default function StreamingPage() {
                 </span>
               </div>
 
-              <DroneCanvas
-                hue={hue}
-                fps={60}
-                noisy={focusedDrone.status === 'red'}
+              <DroneVideo
+                streamUrl={focusedDrone.stream_url}
                 inactive={focusedDrone.status === 'inactive'}
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
               />
@@ -427,10 +445,10 @@ export default function StreamingPage() {
 
             {!gridOpen && (
               <div className="flex items-center gap-4 flex-1">
-                <span className="mono text-[9px] tracking-[1px]" style={{ color: 'var(--success)' }}>● {FLEET_COUNTS.green} ONLINE</span>
-                <span className="mono text-[9px] tracking-[1px]" style={{ color: 'var(--warning)' }}>● {FLEET_COUNTS.yellow} LOW BAT</span>
-                <span className="mono text-[9px] tracking-[1px]" style={{ color: 'var(--danger)'  }}>● {FLEET_COUNTS.red} LOST SIG</span>
-                <span className="mono text-[9px] tracking-[1px]" style={{ color: '#4a5568'         }}>● {FLEET_COUNTS.inactive} STANDBY</span>
+                <span className="mono text-[9px] tracking-[1px]" style={{ color: 'var(--success)' }}>● {fleetCounts.green} ONLINE</span>
+                <span className="mono text-[9px] tracking-[1px]" style={{ color: 'var(--warning)' }}>● {fleetCounts.yellow} LOW BAT</span>
+                <span className="mono text-[9px] tracking-[1px]" style={{ color: 'var(--danger)'  }}>● {fleetCounts.red} LOST SIG</span>
+                <span className="mono text-[9px] tracking-[1px]" style={{ color: '#4a5568'         }}>● {fleetCounts.inactive} STANDBY</span>
                 {N > 1 && <span className="mono text-[9px] tracking-[1px]" style={{ color: 'var(--accent)' }}>◈ {N} PINNED</span>}
               </div>
             )}
@@ -527,9 +545,7 @@ export default function StreamingPage() {
 }
 
 // ── Multi-view pane cell ──
-function DronePane({ drone, focused, fps, onFocus, onUnpin }) {
-  const hue = 100 + (parseInt(drone.id.replace('DRN-', '')) * 3) % 40
-
+function DronePane({ drone, focused, onFocus, onUnpin }) {
   return (
     <div
       onClick={onFocus}
@@ -541,11 +557,9 @@ function DronePane({ drone, focused, fps, onFocus, onUnpin }) {
         transition: 'outline 0.15s ease',
       }}
     >
-      <DroneCanvas
-        hue={hue}
-        noisy={drone.status === 'red'}
+      <DroneVideo
+        streamUrl={drone.stream_url}
         inactive={drone.status === 'inactive'}
-        fps={fps}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       />
 

@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import TopNav    from '@/components/layout/TopNav.jsx'
 import BottomBar from '@/components/layout/BottomBar.jsx'
 import DroneThumb from '@/components/stream/DroneThumb.jsx'
-import { DRONES, STATUS_COLORS } from '@/data/drones.js'
+import { STATUS_COLORS } from '@/data/drones.js'
 import { useClock } from '@/hooks/useClock.js'
+import { useDrones } from '@/hooks/useDrones.js'
 
 // ── KPI data (replace with WebSocket in Phase C)
 const KPIS = [
@@ -46,11 +47,11 @@ const BADGE_STYLES = {
 
 const ALERT_BORDER = { crit: 'var(--danger)', warn: 'var(--warning)', info: 'var(--accent)' }
 
-const PREVIEW_DRONES = DRONES.slice(0, 4)
-
 export default function DashboardPage() {
   const navigate = useNavigate()
   const [activeMapMode, setActiveMapMode] = useState('SAT')
+  const { drones } = useDrones()
+  const previewDrones = drones.slice(0, 4)
 
   return (
     <div className="fixed inset-0 flex flex-col" style={{ background: '#0b0e14' }}>
@@ -189,7 +190,7 @@ export default function DashboardPage() {
           <SectionHeader title="LIVE STREAMING" dotColor="var(--accent)"
                          action="OPEN ▶" onAction={() => navigate('/streaming')} />
           <div className="grid grid-cols-2 gap-1 p-2" style={{ background: '#0f1319', flexShrink: 0 }}>
-            {PREVIEW_DRONES.map((d, i) => (
+            {previewDrones.map(d => (
               <DroneThumb key={d.id} drone={d} width={144} height={90}
                           onClick={() => navigate('/streaming')} />
             ))}
