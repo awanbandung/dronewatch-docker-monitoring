@@ -38,6 +38,7 @@ export default function StreamingPage() {
   const [gridOpen, setGridOpen]         = useState(false)
   const [stopConfirm, setStopConfirm]   = useState(false)
   const [feedFocused, setFeedFocused]   = useState(false)
+  const [ctrlHeld, setCtrlHeld]         = useState(false)
 
   // Initialise pinned/focused once drones load
   useEffect(() => {
@@ -106,12 +107,21 @@ export default function StreamingPage() {
   // Streaming-page shortcuts
   useEffect(() => {
     function onKeyDown(e) {
+      if (e.key === 'Control') { setCtrlHeld(true); return }
       if (!e.ctrlKey) return
       if (e.key === 'g' || e.key === 'G') { e.preventDefault(); setGridOpen(v => !v) }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); setSidebarOpen(v => !v) }
     }
+    function onKeyUp(e) { if (e.key === 'Control') setCtrlHeld(false) }
+    function onBlur()   { setCtrlHeld(false) }
     document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
+    document.addEventListener('keyup',   onKeyUp)
+    window.addEventListener('blur',      onBlur)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('keyup',   onKeyUp)
+      window.removeEventListener('blur',      onBlur)
+    }
   }, [])
 
   function handlePinDrone(drone) {
@@ -368,9 +378,10 @@ export default function StreamingPage() {
 
               {N > 1 && (
                 <button onClick={() => setSidebarOpen(false)}
-                        className="absolute top-2 right-2 z-10 mono text-[8px] px-1.5 py-0.5 rounded-sm"
+                        className="absolute top-2 right-2 z-10 mono text-[8px] px-1.5 py-0.5 rounded-sm flex items-center gap-1"
                         style={{ background: '#0f1319', border: '1px solid rgba(255,255,255,0.10)', color: '#6b7b90' }}>
                   ◁ HIDE
+                  {ctrlHeld && <KbHint k="B" />}
                 </button>
               )}
 
@@ -433,7 +444,7 @@ export default function StreamingPage() {
           {/* Sidebar reopen tab */}
           {N > 1 && !sidebarOpen && (
             <button onClick={() => setSidebarOpen(true)}
-                    className="shrink-0 flex items-center justify-center"
+                    className="shrink-0 flex flex-col items-center justify-center gap-1"
                     style={{
                       width: 18,
                       background: '#0f1319',
@@ -444,6 +455,7 @@ export default function StreamingPage() {
                     style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>
                 ▶ SIDEBAR
               </span>
+              {ctrlHeld && <KbHint k="B" vertical />}
             </button>
           )}
 
@@ -494,7 +506,7 @@ export default function StreamingPage() {
             )}
 
             <button onClick={() => setGridOpen(v => !v)}
-                    className="mono text-[9px] px-2 py-1 rounded-sm ml-auto transition-colors"
+                    className="mono text-[9px] px-2 py-1 rounded-sm ml-auto transition-colors flex items-center gap-1.5"
                     style={{
                       background: gridOpen ? 'var(--accent-dim)' : 'transparent',
                       border: `1px solid ${gridOpen ? 'rgba(0,200,240,0.28)' : 'rgba(255,255,255,0.10)'}`,
@@ -502,6 +514,7 @@ export default function StreamingPage() {
                       letterSpacing: '1px',
                     }}>
               {gridOpen ? '▲ COLLAPSE' : '▼ DRONES'}
+              {ctrlHeld && <KbHint k="G" />}
             </button>
           </div>
 
@@ -554,6 +567,21 @@ export default function StreamingPage() {
 
       <BottomBar />
     </div>
+  )
+}
+
+function KbHint({ k, vertical = false }) {
+  return (
+    <span className="mono text-[7px] px-0.5 rounded"
+          style={{
+            background: 'var(--accent-dim)',
+            color: 'var(--accent)',
+            border: '1px solid rgba(0,200,240,0.3)',
+            letterSpacing: '1px',
+            writingMode: vertical ? 'vertical-rl' : undefined,
+          }}>
+      ^{k}
+    </span>
   )
 }
 
