@@ -166,17 +166,6 @@ reis-command/
 
 ---
 
-## Phase Roadmap
-
-| Phase | Status | Scope |
-|---|---|---|
-| **1 — UI prototype** | ✅ Done | React frontend, mock data |
-| **2 — Backend + streaming** | ✅ Done | NestJS, PostgreSQL, JWT, WebRTC/WHEP |
-| **3 — GPS + Inventory pages** | 🔲 Next | `/gps`, `/inventory` |
-| **4 — Live telemetry** | 🔲 Future | MQTT, WebSocket gateway, TimescaleDB, MapLibre |
-
----
-
 ## Tech Stack
 
 | Layer | Tech |
