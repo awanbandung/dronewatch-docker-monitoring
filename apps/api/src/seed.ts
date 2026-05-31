@@ -21,7 +21,7 @@ async function seed() {
     return {
       code: `drone${n}`,
       label: `DRN-${String(n).padStart(3, '0')}`,
-      stream_url: `https://stream.r3.army/live/drone${n}/index.m3u8`,
+      stream_url: `https://stream.r3.army/live/drone${n}/whep`,
       group_id: null,
       status: 'offline' as const,
     };

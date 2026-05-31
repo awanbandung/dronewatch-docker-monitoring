@@ -1,4 +1,5 @@
 // src/components/stream/DroneThumb.jsx
+import { useState } from 'react'
 import DroneVideo from './DroneVideo.jsx'
 import { STATUS_COLORS } from '@/data/drones.js'
 
@@ -17,15 +18,20 @@ export default function DroneThumb({
   width    = 110,
   height   = 68,
 }) {
+  const [hovered, setHovered] = useState(false)
+
   const borderColor = selected ? 'var(--accent)'
-    : pinned          ? 'rgba(0,200,240,0.35)'
+    : hovered          ? 'rgba(0,200,240,0.55)'
+    : pinned           ? 'rgba(0,200,240,0.35)'
     : BORDER_COLORS[drone.status]
 
-  const borderWidth = selected ? '2px' : '1px'
+  const borderWidth = selected || hovered ? '2px' : '1px'
 
   return (
     <div
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className="relative shrink-0 cursor-pointer overflow-hidden rounded-sm transition-transform duration-150 hover:scale-105"
       style={{
         width,
@@ -33,6 +39,7 @@ export default function DroneThumb({
         border: `${borderWidth} solid ${borderColor}`,
         background: '#131820',
         opacity: drone.status === 'inactive' ? 0.55 : 1,
+        transition: 'border-color 0.15s ease, border-width 0.15s ease',
       }}
     >
       <DroneVideo

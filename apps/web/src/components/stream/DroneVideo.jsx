@@ -1,32 +1,44 @@
 import { useEffect, useRef } from 'react'
-import Hls from 'hls.js'
+
+async function startWhep(whepUrl, videoEl) {
+  const pc = new RTCPeerConnection()
+  pc.addTransceiver('video', { direction: 'recvonly' })
+  pc.addTransceiver('audio', { direction: 'recvonly' })
+
+  pc.ontrack = (e) => {
+    if (e.track.kind === 'video') videoEl.srcObject = e.streams[0]
+  }
+
+  const offer = await pc.createOffer()
+  await pc.setLocalDescription(offer)
+
+  const res = await fetch(whepUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/sdp' },
+    body: offer.sdp,
+  })
+
+  if (!res.ok) throw new Error(`WHEP ${res.status}`)
+  const sdp = await res.text()
+  await pc.setRemoteDescription({ type: 'answer', sdp })
+  return pc
+}
 
 export default function DroneVideo({ streamUrl, inactive = false, className = '', style = {} }) {
   const videoRef = useRef(null)
-  const hlsRef   = useRef(null)
+  const pcRef    = useRef(null)
 
   useEffect(() => {
     const video = videoRef.current
     if (!video || inactive || !streamUrl) return
 
-    function attach() {
-      if (Hls.isSupported()) {
-        const hls = new Hls({ lowLatencyMode: true, maxBufferLength: 10 })
-        hlsRef.current = hls
-        hls.loadSource(streamUrl)
-        hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}) })
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Safari native HLS
-        video.src = streamUrl
-        video.play().catch(() => {})
-      }
-    }
+    startWhep(streamUrl, video)
+      .then(pc => { pcRef.current = pc })
+      .catch(() => {})  // stream offline — video stays blank
 
-    attach()
     return () => {
-      hlsRef.current?.destroy()
-      hlsRef.current = null
+      pcRef.current?.close()
+      pcRef.current = null
     }
   }, [streamUrl, inactive])
 
@@ -45,9 +57,9 @@ export default function DroneVideo({ streamUrl, inactive = false, className = ''
       ref={videoRef}
       className={className}
       style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', background: '#0d1018', ...style }}
+      autoPlay
       muted
       playsInline
-      autoPlay
     />
   )
 }

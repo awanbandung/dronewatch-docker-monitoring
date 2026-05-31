@@ -66,18 +66,20 @@ export default function StreamingPage() {
   }
 
   useEffect(() => {
+    if (!focusedDrone) return
     setFlightSec(focusedDrone.flightSec)
     const id = setInterval(() => setFlightSec(s => s + 1), 1000)
     return () => clearInterval(id)
-  }, [focusedDrone.id])
+  }, [focusedDrone?.id])
 
   // Reset recording when focused pane changes
   useEffect(() => {
+    if (!focusedDrone) return
     setRecording(false)
     setRecSec(0)
     clearTimeout(stopConfirmRef.current)
     setStopConfirm(false)
-  }, [focusedDrone.id])
+  }, [focusedDrone?.id])
 
   useEffect(() => {
     if (recording) {
@@ -546,15 +548,24 @@ export default function StreamingPage() {
 
 // ── Multi-view pane cell ──
 function DronePane({ drone, focused, onFocus, onUnpin }) {
+  const [hovered, setHovered] = useState(false)
+
+  const shadow = focused
+    ? 'inset 0 0 0 2px var(--accent)'
+    : hovered
+    ? 'inset 0 0 0 2px rgba(0,200,240,0.55)'
+    : 'inset 0 0 0 1px rgba(255,255,255,0.06)'
+
   return (
     <div
       onClick={onFocus}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className="relative overflow-hidden cursor-pointer group"
       style={{
         background: '#000',
-        outline: focused ? '2px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)',
-        outlineOffset: focused ? '-2px' : '-1px',
-        transition: 'outline 0.15s ease',
+        boxShadow: shadow,
+        transition: 'box-shadow 0.15s ease',
       }}
     >
       <DroneVideo
